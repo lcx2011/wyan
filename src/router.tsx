@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { NewLearnPage } from './pages/NewLearnPage';
 import { SearchPage } from './pages/SearchPage';
@@ -8,6 +8,8 @@ import { TripleChallengePage } from './pages/TripleChallengePage';
 import { SnowballPage } from './pages/SnowballPage';
 import { ExamPage } from './pages/ExamPage';
 import { ReportPage } from './pages/ReportPage';
+import { AuthPage } from './pages/AuthPage';
+import { getActiveUser } from './auth/session';
 
 /**
  * 路由表（HashRouter）：
@@ -18,15 +20,22 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/learn" element={<NewLearnPage />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/review" element={<ReviewPage />} />
-      <Route path="/passage/:passageId" element={<CardLearnPage />} />
-      <Route path="/passage/:passageId/challenge" element={<TripleChallengePage />} />
-      <Route path="/passage/:passageId/snowball" element={<SnowballPage />} />
-      <Route path="/passage/:passageId/exam" element={<ExamPage />} />
-      <Route path="/report/:attemptId" element={<ReportPage />} />
+      <Route element={<RequireAuth />}>
+        <Route path="/learn" element={<NewLearnPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/review" element={<ReviewPage />} />
+        <Route path="/passage/:passageId" element={<CardLearnPage />} />
+        <Route path="/passage/:passageId/challenge" element={<TripleChallengePage />} />
+        <Route path="/passage/:passageId/snowball" element={<SnowballPage />} />
+        <Route path="/passage/:passageId/exam" element={<ExamPage />} />
+        <Route path="/report/:attemptId" element={<ReportPage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+/** 首页允许先浏览；真正读写学习数据的页面必须先完成登录。 */
+function RequireAuth() {
+  return getActiveUser() ? <Outlet /> : <AuthPage />;
 }

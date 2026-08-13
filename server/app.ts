@@ -121,6 +121,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
 
   app.addHook('onSend', async (request, reply) => {
     reply.header('x-request-id', request.id);
+    const staticPath = request.url.split('?', 1)[0];
+    if (staticPath === '/' || staticPath === '/index.html' || staticPath === '/sw.js' || staticPath === '/registerSW.js') {
+      // These files control the installed PWA shell and must be checked on every release.
+      reply.header('cache-control', 'no-cache, no-store, must-revalidate');
+      reply.header('pragma', 'no-cache');
+      reply.header('expires', '0');
+    }
   });
 
   app.setErrorHandler((error, request, reply) => {

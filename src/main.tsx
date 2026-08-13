@@ -24,8 +24,12 @@ function renderPage(page: React.ReactNode): void {
 
 function BootPage(): React.ReactElement {
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#FFF8F0', color: '#3E2F23', fontFamily: 'sans-serif' }}>
-      正在连接云端服务……
+    <div className="wenyan-boot-page" role="status" aria-label="加载中">
+      <div className="wenyan-loading" aria-hidden="true">
+        <span className="wenyan-loading-dot" />
+        <span className="wenyan-loading-dot" />
+        <span className="wenyan-loading-dot" />
+      </div>
     </div>
   );
 }
@@ -33,7 +37,6 @@ function BootPage(): React.ReactElement {
 function UnavailablePage(): React.ReactElement {
   return (
     <ServiceUnavailablePage
-      message="当前无法连接云端服务。为保证数据一致性，应用不会使用浏览器中的离线数据。"
       onRetry={() => window.location.reload()}
     />
   );
@@ -47,7 +50,7 @@ async function mount(): Promise<void> {
     await bootstrapServerArchive();
   }
   const { default: App } = await import('./App');
-  renderPage(<App initialUser={user} />);
+  renderPage(<App />);
 }
 
 renderPage(<BootPage />);

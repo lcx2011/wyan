@@ -3,8 +3,8 @@ export interface CloudStatusSnapshot {
   message: string | null;
 }
 
-const INITIAL_MESSAGE = '正在连接云端服务……';
-let snapshot: CloudStatusSnapshot = { available: false, message: INITIAL_MESSAGE };
+// The boot screen uses animation only; an error message is published only after a request fails.
+let snapshot: CloudStatusSnapshot = { available: false, message: null };
 const listeners = new Set<() => void>();
 
 function publish(next: CloudStatusSnapshot): void {

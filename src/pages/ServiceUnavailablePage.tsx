@@ -1,7 +1,7 @@
-import { Alert, Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
 
 export function ServiceUnavailablePage({
-  message = '当前无法连接云端服务。为保证数据一致性，应用不会使用本地离线数据。',
+  message = '暂时无法连接服务，请稍后重试。',
   onRetry,
 }: {
   message?: string;
@@ -13,11 +13,9 @@ export function ServiceUnavailablePage({
         <CardContent sx={{ p: 4 }}>
           <Stack spacing={2.5} alignItems="center" textAlign="center">
             <Typography variant="h4" color="primary.main" sx={{ fontWeight: 800 }}>文言文背诵</Typography>
-            <Alert severity="warning" sx={{ width: '100%', textAlign: 'left' }}>{message}</Alert>
-            <Typography variant="body2" color="text.secondary">
-              数据仅保存在云端数据库；连接恢复后再继续使用。
-            </Typography>
-            <Button variant="contained" size="large" onClick={onRetry}>重新连接</Button>
+            <Typography variant="h6">连接失败</Typography>
+            <Typography variant="body2" color="text.secondary">{message}</Typography>
+            <Button variant="contained" size="large" onClick={onRetry}>重试</Button>
           </Stack>
         </CardContent>
       </Card>

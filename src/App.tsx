@@ -3,9 +3,7 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { HashRouter } from 'react-router-dom';
 import { AppRoutes } from './router';
 import { MigrationNotice } from './components/MigrationNotice';
-import { AuthPage } from './pages/AuthPage';
 import { ServiceUnavailablePage } from './pages/ServiceUnavailablePage';
-import type { AuthUser } from './auth/session';
 import { getCloudStatus, subscribeCloudStatus } from './api/cloudStatus';
 import { useSyncExternalStore } from 'react';
 
@@ -71,12 +69,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 /** 应用外壳：HashRouter + ErrorBoundary（PWA 部署无服务器 rewrite，hash 路由刷新不 404）。 */
-export default function App({ initialUser }: { initialUser: AuthUser | null }) {
+export default function App() {
   const cloud = useSyncExternalStore(subscribeCloudStatus, getCloudStatus, getCloudStatus);
   if (!cloud.available) {
     return <ServiceUnavailablePage message={cloud.message ?? undefined} onRetry={() => window.location.reload()} />;
   }
-  if (!initialUser) return <AuthPage />;
   return (
     <HashRouter>
       <ErrorBoundary>

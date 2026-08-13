@@ -32,16 +32,18 @@ export function HomePage() {
         px: 3,
       }}
     >
-      <Box sx={{ position: 'absolute', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" color="text.secondary">{user?.username}</Typography>
-        <Button size="small" color="inherit" onClick={() => { void signOut(); }}>退出</Button>
-      </Box>
+      {user ? (
+        <Box sx={{ position: 'absolute', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" color="text.secondary">{user.username}</Typography>
+          <Button size="small" color="inherit" onClick={() => { void signOut(); }}>退出</Button>
+        </Box>
+      ) : null}
       <Box sx={{ textAlign: 'center', mb: 7 }}>
         <Typography variant="h3" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 2 }}>
           文言文背诵
         </Typography>
         <Typography color="text.secondary" sx={{ mt: 1, fontSize: 16 }}>
-          闯关式背诵 · 数据安全保存在云端
+          闯关式背诵
         </Typography>
       </Box>
 
@@ -101,9 +103,11 @@ export function HomePage() {
         </Button>
       </Box>
 
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 8 }}>
-        当前账号：{user?.username} · 学习数据保存在云端
-      </Typography>
+      {user ? (
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 8 }}>
+          当前账号：{user.username}
+        </Typography>
+      ) : null}
     </Box>
   );
 }

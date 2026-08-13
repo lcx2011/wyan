@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: '文言文背诵',
         short_name: '文言文',
-        description: '面向中小学生的文言文渐进式背诵闯关应用，学习数据仅保存在云端',
+        description: '面向中小学生的文言文渐进式背诵闯关应用',
         lang: 'zh-CN',
         theme_color: '#FF7043',
         background_color: '#FFF8F0',

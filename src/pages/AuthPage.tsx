@@ -1,12 +1,14 @@
 import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { login, register } from '../api/auth';
 import { activateUser } from '../auth/session';
 
 type Mode = 'login' | 'register';
 
 export function AuthPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -45,6 +47,9 @@ export function AuthPage() {
             </Button>
             <Button type="button" color="inherit" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>
               {mode === 'login' ? '没有账号？注册' : '已有账号？登录'}
+            </Button>
+            <Button type="button" color="inherit" onClick={() => navigate('/', { replace: true })}>
+              返回首页
             </Button>
           </Stack>
         </CardContent>
