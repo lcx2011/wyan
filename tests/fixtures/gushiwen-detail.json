@@ -1,0 +1,21 @@
+{
+  "title": {
+    "name": "<span>出师表</span>",
+    "author": "<b>诸葛亮</b>",
+    "chaodai": "<i>三国</i>"
+  },
+  "poem_data": {
+    "content": [
+      { "yuanwen": "<span>先帝创业未半而中道崩殂，</span>", "yiwen": "先帝创业还未完成一半便中途去世。", "pinyin": "xiān dì chuàng yè wèi bàn ér zhōng dào bēng cú" },
+      { "yuanwen": "今天下三分，益州疲弊，", "yiwen": "如今天下分为三国，益州地区民力困乏。" },
+      { "yuanwen": "此诚危急存亡之秋也。", "yiwen": "这实在是形势危急、决定国家存亡的时候。" },
+      { "yuanwen": "然侍卫之臣不懈于内，", "yiwen": "不过侍卫大臣在宫廷内毫不懈怠。" },
+      { "yuanwen": "忠志之士忘身于外者，", "yiwen": "忠诚有志的将士在疆场上奋不顾身。" },
+      { "yuanwen": "盖追先帝之殊遇，", "yiwen": "大概是追念先帝的特别厚待。" },
+      { "yuanwen": "欲报之于陛下也。", "yiwen": "想要报答给陛下。" },
+      { "yuanwen": "诚宜开张圣听，", "yiwen": "实在应当广泛听取意见。" },
+      { "yuanwen": "以光先帝遗德，", "yiwen": "来发扬先帝遗留的美德。" },
+      { "yuanwen": "恢弘志士之气。", "yiwen": "振奋有志之士的气概。" }
+    ]
+  }
+}

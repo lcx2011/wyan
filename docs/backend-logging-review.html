@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wenyan 后端日志调研报告</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --brand: #4f46e5;
+    --brand-soft: #eef2ff;
+    --green: #16a34a;
+    --green-soft: #f0fdf4;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --orange: #d97706;
+    --orange-soft: #fffbeb;
+    --blue: #0284c7;
+    --blue-soft: #f0f9ff;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    padding-bottom: 80px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #3730a3 0%, #4f46e5 55%, #6d28d9 100%);
+    color: #fff;
+    padding: 48px 0 40px;
+  }
+  header .kicker { font-size: 13px; letter-spacing: 2px; opacity: .75; text-transform: uppercase; }
+  header h1 { font-size: 32px; margin: 8px 0 10px; font-weight: 700; }
+  header p.sub { opacity: .9; font-size: 15px; max-width: 720px; }
+  .meta-row { display: flex; gap: 24px; margin-top: 18px; font-size: 13px; opacity: .85; flex-wrap: wrap; }
+  .meta-row span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Score card */
+  .verdict {
+    display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px 28px; margin: -28px 0 32px; box-shadow: 0 8px 24px rgba(31,41,55,.06);
+  }
+  .score-big { text-align: center; }
+  .score-ring { width: 132px; height: 132px; margin: 0 auto; position: relative; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .num {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .score-ring .num b { font-size: 34px; color: var(--brand); }
+  .score-ring .num i { font-size: 12px; color: var(--muted); font-style: normal; }
+  .verdict h2 { font-size: 18px; margin-bottom: 8px; }
+  .verdict p { font-size: 14px; color: var(--muted); }
+  .stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: -16px 0 36px; }
+  .stat {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; text-align: center;
+  }
+  .stat b { display: block; font-size: 26px; color: var(--brand); }
+  .stat span { font-size: 12px; color: var(--muted); }
+
+  /* Sections */
+  section { margin-top: 40px; }
+  h2.sec {
+    font-size: 21px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  h2.sec::before {
+    content: ""; width: 4px; height: 22px; border-radius: 2px; background: var(--brand); display: inline-block;
+  }
+  h3 { font-size: 16px; margin: 22px 0 10px; }
+  p, li { font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+
+  /* Bars */
+  .bars { display: flex; flex-direction: column; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: 190px 1fr 54px; align-items: center; gap: 12px; }
+  .bar-row .label { font-size: 13px; color: var(--ink); font-weight: 500; }
+  .bar-track { height: 10px; background: #eef0f3; border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, #818cf8, #4f46e5); }
+  .bar-row .val { font-size: 13px; font-weight: 700; color: var(--brand); text-align: right; }
+
+  /* Good points */
+  .good-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .good {
+    background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--green);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .good b { display: block; font-size: 14px; margin-bottom: 4px; }
+  .good span { font-size: 13px; color: var(--muted); }
+  .code-ref { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; color: var(--blue); }
+
+  /* Issue table */
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; font-size: 13px; }
+  th { background: #f8fafc; text-align: left; padding: 10px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .sev { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+  .sev.high { background: var(--red-soft); color: var(--red); }
+  .sev.mid { background: var(--orange-soft); color: var(--orange); }
+  .sev.low { background: #f1f5f9; color: #475569; }
+
+  /* Fix cards */
+  .prio { border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; border: 1px solid var(--line); background: var(--card); }
+  .prio .head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .tag { font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 6px; letter-spacing: .5px; }
+  .tag.p0 { background: var(--red); color: #fff; }
+  .tag.p1 { background: var(--orange); color: #fff; }
+  .tag.p2 { background: var(--blue); color: #fff; }
+  .prio .head b { font-size: 15px; }
+  .prio .head .est { font-size: 12px; color: var(--muted); margin-left: auto; }
+  .prio ul { padding-left: 20px; }
+  .prio li { margin-bottom: 8px; color: #374151; }
+
+  /* Code */
+  pre {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 16px 18px;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 10px 0 4px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+  }
+  code.inline { background: #eef0f3; color: #4338ca; padding: 1px 6px; border-radius: 5px; font-size: 12.5px; font-family: ui-monospace, Consolas, monospace; }
+  .code-cap { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
+
+  /* Roadmap */
+  .timeline { position: relative; padding-left: 26px; }
+  .timeline::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+  .tl-item { position: relative; margin-bottom: 18px; }
+  .tl-item::before {
+    content: ""; position: absolute; left: -24px; top: 6px; width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--brand);
+  }
+  .tl-item b { font-size: 14px; display: block; }
+  .tl-item .when { font-size: 12px; color: var(--brand); font-weight: 600; }
+  .tl-item p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) {
+    .verdict { grid-template-columns: 1fr; }
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    .good-grid, .two-col { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 130px 1fr 44px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Code Review · 调研报告</div>
+    <h1>wenyan 后端日志调研报告</h1>
+    <p class="sub">文言文背诵 PWA（wenyan-beisong）—— 对 Fastify + SQLite 后端的日志实践进行盘点，输出问题清单与分优先级改进方案。</p>
+    <div class="meta-row">
+      <span>📅 调研日期：2026-08-13</span>
+      <span>📁 范围：server/ · deploy/ · 前端 API 调用链</span>
+      <span>🧬 技术栈：Fastify 5 + Pino + better-sqlite3</span>
+      <span style="background:#16a34a;color:#fff;padding:2px 12px;border-radius:99px;font-weight:600;">✅ 改进已全部实施（2026-08-13）</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Verdict -->
+  <div class="verdict">
+    <div class="score-big">
+      <div class="score-ring">
+        <svg width="132" height="132" viewBox="0 0 132 132">
+          <circle cx="66" cy="66" r="56" fill="none" stroke="#eef0f3" stroke-width="10"/>
+          <circle cx="66" cy="66" r="56" fill="none" stroke="#4f46e5" stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="352" stroke-dashoffset="193.6"/>
+        </svg>
+        <div class="num"><b>4.5</b><i>/ 10 分</i></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">综合评分</div>
+    </div>
+    <div>
+      <h2>结论：选型正确，业务日志近乎空白</h2>
+      <p>后端搭在 Fastify 上，默认就走 Pino 结构化 JSON 日志，起点并不差；但 <b>11 个 API 路由里只有 gushiwen 代理写了两行业务日志</b>，存档导入、复习会话等核心操作既不记录成功也不记录失败，错误大多只回给客户端、不落日志。当前处于"有框架默认日志可用"的阶段，距离"可观测、可审计、可排障"还有明显距离。</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-strip">
+    <div class="stat"><b>5</b><span>做得好的点</span></div>
+    <div class="stat"><b>10</b><span>发现的问题</span></div>
+    <div class="stat"><b>2</b><span>高严重度问题</span></div>
+    <div class="stat"><b>11</b><span>改进措施</span></div>
+  </div>
+
+  <!-- Overview -->
+  <section>
+    <h2 class="sec">一、调研范围与方法</h2>
+    <div class="card">
+      <p>逐一阅读了后端全部源码与部署产物：</p>
+      <ul style="padding-left:20px;margin-top:8px;">
+        <li><span class="code-ref">server/index.ts</span> —— 服务入口（启动、监听、致命错误处理）</li>
+        <li><span class="code-ref">server/app.ts</span> —— 路由层（11 个 API + gushiwen 反向代理）</li>
+        <li><span class="code-ref">server/db.ts</span> —— <code class="inline">ArchiveDatabase</code> 数据访问层（SQLite 迁移/物化/事务）</li>
+        <li><span class="code-ref">server/types.ts</span> —— 类型与工具函数</li>
+        <li><span class="code-ref">deploy/wenyan.service</span> · <span class="code-ref">deploy-backend.ps1</span> —— systemd 生产部署配置</li>
+        <li><span class="code-ref">src/api/*</span> —— 前端 API 调用封装（判断前后端日志能否串联）</li>
+        <li><span class="code-ref">tests/server/api.test.ts</span> —— 服务端测试（确认日志是否有回归保护）</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Scores -->
+  <section>
+    <h2 class="sec">二、分维度评分</h2>
+    <div class="card">
+      <div class="bars">
+        <div class="bar-row"><span class="label">日志框架与选型</span><div class="bar-track"><div class="bar-fill" style="width:80%"></div></div><span class="val">8</span></div>
+        <div class="bar-row"><span class="label">请求级访问日志</span><div class="bar-track"><div class="bar-fill" style="width:60%"></div></div><span class="val">6</span></div>
+        <div class="bar-row"><span class="label">脱敏与安全意识</span><div class="bar-track"><div class="bar-fill" style="width:60%"></div></div><span class="val">6</span></div>
+        <div class="bar-row"><span class="label">持久化与轮转</span><div class="bar-track"><div class="bar-fill" style="width:40%"></div></div><span class="val">4</span></div>
+        <div class="bar-row"><span class="label">错误日志</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="val">3</span></div>
+        <div class="bar-row"><span class="label">业务日志覆盖</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span class="val">2</span></div>
+        <div class="bar-row"><span class="label">可观测性与端到端串联</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span class="val">2</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Good -->
+  <section>
+    <h2 class="sec">三、做得好的地方</h2>
+    <div class="good-grid">
+      <div class="good">
+        <b>✅ 选对了日志基础设施</b>
+        <span>Fastify 内置 Pino，<code class="inline">buildApp({ logger: true })</code> 即获得 JSON 结构化输出、时间戳、请求 ID、级别控制，零成本吃到业界标准方案。</span>
+      </div>
+      <div class="good">
+        <b>✅ 启动与致命错误有记录</b>
+        <span><span class="code-ref">index.ts:13</span> 用 <code class="inline">app.log.error(error)</code> 记录启动失败并退出，不会"无声死亡"。</span>
+      </div>
+      <div class="good">
+        <b>✅ 唯一业务日志点写得规范</b>
+        <span>gushiwen 代理的 info/error 两行日志使用结构化字段（upstream/status/bytes）+ 语义化事件名，是全项目日志的样板。</span>
+      </div>
+      <div class="good">
+        <b>✅ 生产日志不会丢</b>
+        <span>systemd 托管（wenyan.service）默认把 stdout 收入 journald，<code class="inline">journalctl -u wenyan</code> 可查，重启策略 on-failure。</span>
+      </div>
+      <div class="good">
+        <b>✅ 边界处理有意识</b>
+        <span>前端对后端不可用有降级与 <code class="inline">console.warn</code>（archive.ts:102），说明团队有"错误要留痕"的意识，只是后端没跟上。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Issues -->
+  <section>
+    <h2 class="sec">四、问题清单（10 项）</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>位置</th><th>严重度</th><th>问题描述</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td><td>app.ts 全部业务路由</td><td><span class="sev high">高</span></td>
+          <td><b>业务操作零日志。</b>archive 导入/覆盖、复习会话创建/作答/完成均无任何记录：无法回答"存档什么时候被导入过""复习为什么卡住"这类问题。</td>
+        </tr>
+        <tr>
+          <td class="num">2</td><td>app.ts review 系列 catch</td><td><span class="sev high">高</span></td>
+          <td><b>错误被吞。</b>attempts/complete 的 catch 只把 message 回给客户端，不记录 stack、输入参数与现场；前端若离线，故障证据为零。</td>
+        </tr>
+        <tr>
+          <td class="num">3</td><td>index.ts:11</td><td><span class="sev mid">中</span></td>
+          <td><b>console.log 与 app.log 混用。</b>启动日志用 <code class="inline">console.log('[wenyan-api] listening…')</code>，与 Pino 的 JSON 格式分属两套输出管道，生产下格式不统一。</td>
+        </tr>
+        <tr>
+          <td class="num">4</td><td>index.ts:7</td><td><span class="sev mid">中</span></td>
+          <td><b>日志级别写死。</b><code class="inline">logger: true</code> 固定默认级别，无 <code class="inline">LOG_LEVEL</code> 环境变量，生产无法降噪、排障时无法开 debug。</td>
+        </tr>
+        <tr>
+          <td class="num">5</td><td>app.ts:33 /api/health</td><td><span class="sev low">低</span></td>
+          <td><b>健康检查污染日志。</b>部署脚本、监控都会高频探测 health，Fastify 默认逐条打 req/res 日志，噪音大。</td>
+        </tr>
+        <tr>
+          <td class="num">6</td><td>deploy/wenyan.service</td><td><span class="sev mid">中</span></td>
+          <td><b>无显式日志持久化策略。</b>仅依赖 journald 兜底，容量受限、按天导出不便，且无轮转/保留期配置说明。</td>
+        </tr>
+        <tr>
+          <td class="num">7</td><td>src/api/* ↔ server</td><td><span class="sev mid">中</span></td>
+          <td><b>无端到端请求 ID 串联。</b>Fastify 内部有 reqId 但不透出响应头，前端报错（如 parseResponseJson 的"非 JSON 响应"）无法与服务端日志用同一 ID 关联。</td>
+        </tr>
+        <tr>
+          <td class="num">8</td><td>app.ts 参数校验分支</td><td><span class="sev low">低</span></td>
+          <td><b>400 无痕迹。</b>非法 namespace、缺字段等请求只回 400，不落日志；异常/恶意请求模式不可见。</td>
+        </tr>
+        <tr>
+          <td class="num">9</td><td>db.ts 事务方法</td><td><span class="sev mid">中</span></td>
+          <td><b>无耗时统计。</b>better-sqlite3 同步执行，archive import 是一次大事务（bodyLimit 10MB），慢请求会阻塞事件循环，但日志里永远看不到耗时。</td>
+        </tr>
+        <tr>
+          <td class="num">10</td><td>tests/server/api.test.ts</td><td><span class="sev low">低</span></td>
+          <td><b>日志无回归保护。</b>测试只断言响应，不断言日志输出，未来日志行为变化无任何测试兜底。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Fixes -->
+  <section>
+    <h2 class="sec">五、改进措施</h2>
+
+    <div class="prio">
+      <div class="head"><span class="tag p0">P0</span><b>统一日志基础 + 补齐业务日志</b><span class="est">半天 ~ 1 天</span></div>
+      <ul>
+        <li><b>① 抽出统一 logger 工厂</b> <span class="code-ref">server/logger.ts</span>：从 <code class="inline">LOG_LEVEL</code> 读取级别，注入服务名等基础字段，<code class="inline">buildApp</code> 改为接收 logger 实例而非布尔值。</li>
+        <li><b>② 为每个业务路由补结构化日志</b>：import/put namespace、review 三件套，统一 <code class="inline">{ event, ...fields }</code> 事件命名，用 <code class="inline">request.log</code> 自动带上 reqId。</li>
+        <li><b>③ 加全局错误处理器</b> <code class="inline">setErrorHandler</code>：5xx 打 error（含 stack），4xx 打 warn，终结"错误只回客户端不落日志"。</li>
+        <li><b>④ 替换 console.log</b>：index.ts 启动日志改用 <code class="inline">app.log.info({ port, host }, 'listening')</code>。</li>
+      </ul>
+      <pre>// server/logger.ts —— 统一日志工厂
+import pino from 'pino';
+
+export function createLogger() {
+  const level = process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+  return pino({ level, base: { service: 'wenyan-api' } });
+}</pre>
+      <pre>// index.ts —— 注入实例，替换 console.log
+import { createLogger } from './logger.js';
+const logger = createLogger();
+const app = buildApp({ logger });
+await app.listen({ port, host });
+logger.info({ port, host }, 'wenyan-api listening');</pre>
+      <pre>// app.ts —— 全局错误处理 + 业务日志示例
+app.setErrorHandler((error, request, reply) => {
+  if (reply.statusCode >= 500) request.log.error({ err: error }, 'request failed');
+  else request.log.warn({ err: error }, 'request rejected');
+  reply.send({ error: 'internal error' });
+});
+
+app.post('/api/archive/import', async (request, reply) => {
+  const input = bodyRecord(request.body);
+  const started = performance.now();
+  try {
+    const result = database.importArchive(/* ... */);
+    request.log.info({
+      event: 'archive.import',
+      namespaces: Object.keys(bodyRecord(input.namespaces ?? {})),
+      durationMs: Math.round(performance.now() - started),
+    }, 'archive imported');
+    return reply.send(result);
+  } catch (error) {
+    request.log.error({ err: error, event: 'archive.import' }, 'archive import failed');
+    throw error;
+  }
+});</pre>
+      <p class="code-cap">注意：import 的 body 是用户完整存档，日志里只记 namespace 清单与耗时，<b>不要记录 body 内容</b>（避免大对象与潜在隐私）。</p>
+    </div>
+
+    <div class="prio">
+      <div class="head"><span class="tag p1">P1</span><b>生产可运维性：持久化、串联、降噪</b><span class="est">1 ~ 2 天</span></div>
+      <ul>
+        <li><b>⑤ 日志落盘 + 按天轮转</b>：引入 <code class="inline">pino-roll</code> 写 <code class="inline">data/logs/server.log</code>，保留 7 天；systemd 下 <code class="inline">journalctl -u wenyan</code> 作为兜底，文档写明两者用法。</li>
+        <li><b>⑥ 透出 X-Request-Id</b>：hook 把 Fastify 的 <code class="inline">request.id</code> 写入响应头；前端 fetch 封装读取它并拼进错误信息，排障时前端报错与服务端日志一键关联。</li>
+        <li><b>⑦ health 降噪</b>：用 Fastify 的 <code class="inline">autoLogging.ignore</code> 跳过 /api/health 的访问日志。</li>
+      </ul>
+      <pre>// app.ts —— 请求 ID 透出 + health 降噪
+app.addHook('onSend', async (request, reply) => {
+  reply.header('x-request-id', request.id);
+});
+
+const app = Fastify({
+  logger: {
+    level: process.env.LOG_LEVEL ?? 'info',
+    autoLogging: { ignore: (req) => req.url === '/api/health' },
+  },
+  bodyLimit: 10 * 1024 * 1024,
+});</pre>
+      <pre>// src/api/archive.ts —— 前端读取并透传请求 ID
+const response = await fetch(url, init);
+const requestId = response.headers.get('x-request-id');
+if (!response.ok) throw new Error(`archive request failed: ${response.status} (reqId=${requestId ?? 'n/a'})`);</pre>
+    </div>
+
+    <div class="prio">
+      <div class="head"><span class="tag p2">P2</span><b>可观测性进阶（按需）</b><span class="est">按需迭代</span></div>
+      <ul>
+        <li><b>⑧ 慢操作告警</b>：对 archive import/put、复习事务做耗时统计，超过阈值（如 500ms）打 warn，提前发现事件循环阻塞。</li>
+        <li><b>⑨ 生命周期日志</b>：启动时记录版本号、DB 路径、内置篇目数、迁移结果；优雅关闭时记录。</li>
+        <li><b>⑩ 错误码与字段规范</b>：响应体带 <code class="inline">error.code</code>，日志字段统一 snake_case、事件名 <code class="inline">module.action</code>，为将来接日志平台（如 Loki/ELK）铺路。</li>
+        <li><b>⑪ 测试补日志断言</b>：用 <code class="inline">app.inject</code> + 可收集的 pino transport，断言关键事件（import 成功、attempt 冲突）确实产生日志。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Roadmap -->
+  <section>
+    <h2 class="sec">六、实施路线图</h2>
+    <div class="card">
+      <div class="timeline">
+        <div class="tl-item">
+          <span class="when">阶段一 · 半天 ~ 1 天 · ✅ 已完成</span>
+          <b>P0：先让"发生了什么"有迹可循</b>
+          <p>logger 工厂 + 业务路由补日志 + 全局错误处理器 + 替换 console.log。此阶段零架构改动，纯增量，收益最大。</p>
+        </div>
+        <div class="tl-item">
+          <span class="when">阶段二 · 1 ~ 2 天 · ✅ 已完成</span>
+          <b>P1：让日志"找得到、对得上"</b>
+          <p>pino-roll 落盘轮转、X-Request-Id 端到端串联、health 降噪。生产环境排障体验质变。</p>
+        </div>
+        <div class="tl-item">
+          <span class="when">阶段三 · 按需 · ✅ 已完成</span>
+          <b>P2：从"能看"到"能查"</b>
+          <p>耗时告警、生命周期信息、错误码规范、日志测试。若未来接入监控平台，此阶段完成字段标准化。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Changes -->
+  <section>
+    <h2 class="sec">七、实施变更清单（2026-08-13）</h2>
+    <table>
+      <thead>
+        <tr><th>文件</th><th>变更</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="code-ref">server/logger.ts</span>（新增）</td>
+          <td>统一日志配置 <code class="inline">loggerOptions()</code>：LOG_LEVEL / LOG_FILE 环境变量，生产默认按天落盘 <code class="inline">data/logs/server.log</code>（pino-roll 轮转，保留 7+1 份），开发默认 stdout。</td>
+        </tr>
+        <tr>
+          <td><span class="code-ref">server/index.ts</span></td>
+          <td>改用 <code class="inline">loggerOptions()</code>；启动日志换 <code class="inline">app.log.info</code>，删除 console.log。</td>
+        </tr>
+        <tr>
+          <td><span class="code-ref">server/app.ts</span></td>
+          <td>全部 12 个路由补结构化日志（event 字段 + durationMs 耗时，>500ms 升级 warn）；<code class="inline">setErrorHandler</code> 统一记录 4xx/5xx；响应头透出 x-request-id；LogController 按请求抑制 /api/health 访问日志；400/404/409 响应体带错误码；onReady 打 <code class="inline">app.boot</code> 生命周期日志。</td>
+        </tr>
+        <tr>
+          <td><span class="code-ref">src/api/archive.ts</span> · <span class="code-ref">syncQueue.ts</span> · <span class="code-ref">review.ts</span> · <span class="code-ref">gushiwen.ts</span></td>
+          <td>请求失败错误信息携带 <code class="inline">reqId=…</code>（读取 x-request-id 响应头），前后端日志可按同一 ID 关联。</td>
+        </tr>
+        <tr>
+          <td><span class="code-ref">tests/server/api.test.ts</span></td>
+          <td>新增 3 个日志回归测试：结构化业务事件与 x-request-id、错误码记录、health 访问日志降噪。共 26 个测试全过。</td>
+        </tr>
+        <tr>
+          <td><span class="code-ref">package.json</span></td>
+          <td>新增依赖 pino、pino-roll。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    调研方式：静态代码阅读（server/ · deploy/ · src/api/ · tests/server）。评分基于单人 PWA 场景的合理预期，非企业级标准。改进措施已于 2026-08-13 全部落地并通过测试与构建验证。
+  </footer>
+
+</div>
+</body>
+</html>

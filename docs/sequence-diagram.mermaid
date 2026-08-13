@@ -1,0 +1,30 @@
+sequenceDiagram
+  participant App as "React PWA"
+  participant Local as "本地镜像/outbox"
+  participant API as "Fastify API"
+  participant DB as "SQLite"
+
+  App->>API: GET /api/archive
+  alt 首次启动，服务端未初始化
+    App->>API: POST /api/archive/import（已有本地存档）
+    API->>DB: 保存命名空间快照并建立结构化投影
+  else 已有单人存档
+    App->>Local: 读取待同步快照
+    Local->>API: PUT /api/archive/:namespace
+    API->>DB: 应用最新本地快照
+    API-->>App: 返回服务端快照
+  end
+
+  App->>API: GET /api/content/passages
+  API->>DB: 读取文章版本目录
+  DB-->>API: passages
+  API-->>App: 替换前端内容目录
+
+  App->>API: POST /api/review/sessions
+  API->>DB: 读取 pending review_items
+  API->>DB: 创建或恢复 active review_session
+  API-->>App: 当前复习组
+  App->>App: 本地首字母判定与答错重排
+  App->>API: POST /attempts（operationId）
+  API->>DB: 幂等记录结果并更新 session/item
+  API-->>App: 最新会话状态

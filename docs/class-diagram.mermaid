@@ -1,0 +1,42 @@
+classDiagram
+  class ArchiveAPI {
+    +getArchive()
+    +importArchive()
+    +putNamespace()
+  }
+  class ContentAPI {
+    +listPassages()
+  }
+  class ReviewAPI {
+    +createOrResumeSession()
+    +applyAttempt()
+  }
+  class ArchiveDatabase {
+    +archive_namespaces
+    +content_passages
+    +learning_progress
+    +mistake_records
+    +review_items
+    +review_sessions
+    +review_attempts
+  }
+  class ReviewSelection {
+    +reviewNeedScore()
+    +selectReviewGroup()
+  }
+  class ReviewSession {
+    +answerReview()
+  }
+  class LocalStores {
+    +progressStore
+    +mistakeStore
+    +reviewStore
+    +attemptStore
+  }
+
+  ArchiveAPI --> ArchiveDatabase
+  ContentAPI --> ArchiveDatabase
+  ReviewAPI --> ArchiveDatabase
+  ReviewAPI --> ReviewSelection
+  ReviewAPI --> ReviewSession
+  LocalStores --> ArchiveAPI : 快照/outbox

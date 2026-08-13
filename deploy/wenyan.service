@@ -1,0 +1,18 @@
+[Unit]
+Description=Wenyan personal study archive
+After=network.target
+
+[Service]
+Type=simple
+User=REPLACE_WITH_SERVER_USER
+WorkingDirectory=/opt/wenyan
+Environment=NODE_ENV=production
+Environment=HOST=0.0.0.0
+Environment=PORT=8878
+Environment=WENYAN_DB_PATH=/var/lib/wenyan/wenyan.sqlite
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

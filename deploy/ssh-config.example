@@ -1,0 +1,6 @@
+Host wenyan-home
+    HostName 192.168.40.39
+    User REPLACE_WITH_SERVER_USER
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes

@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: #fff8f0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 错误反馈红闪动画（盲打错误时由 UI 触发，本期预留） */
+@keyframes wenyan-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.wenyan-shake {
+  animation: wenyan-shake 0.3s ease-in-out;
+}
+
+/* 汉字浮现动画（盲打命中时，本期预留） */
+@keyframes wenyan-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.wenyan-pop {
+  animation: wenyan-pop 0.18s ease-out;
+}
