@@ -20,6 +20,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginRoute />} />
       <Route element={<RequireAuth />}>
         <Route path="/learn" element={<NewLearnPage />} />
         <Route path="/search" element={<SearchPage />} />
@@ -38,4 +39,9 @@ export function AppRoutes() {
 /** 首页允许先浏览；真正读写学习数据的页面必须先完成登录。 */
 function RequireAuth() {
   return getActiveUser() ? <Outlet /> : <AuthPage />;
+}
+
+/** 登录入口公开可访问；已有登录态时点击登录直接回到首页。 */
+function LoginRoute() {
+  return getActiveUser() ? <Navigate to="/" replace /> : <AuthPage />;
 }

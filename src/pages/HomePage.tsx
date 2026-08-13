@@ -32,13 +32,19 @@ export function HomePage() {
         px: 3,
       }}
     >
-      {user ? (
-        <Box sx={{ position: 'absolute', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="text.secondary">{user.username}</Typography>
-          <Button size="small" color="inherit" onClick={() => { void signOut(); }}>退出</Button>
-        </Box>
-      ) : null}
-      <Box sx={{ textAlign: 'center', mb: 7 }}>
+      <Box sx={{ position: 'absolute', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+        {user ? (
+          <>
+            <Typography variant="body2" color="text.secondary">{user.username}</Typography>
+            <Button size="small" color="inherit" onClick={() => { void signOut(); }}>退出</Button>
+          </>
+        ) : (
+          <Button size="small" variant="outlined" onClick={() => navigate('/login')}>
+            登录
+          </Button>
+        )}
+      </Box>
+      <Box sx={{ textAlign: 'center', mb: 7, transform: 'translateY(-16px)' }}>
         <Typography variant="h3" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 2 }}>
           文言文背诵
         </Typography>
@@ -47,7 +53,7 @@ export function HomePage() {
         </Typography>
       </Box>
 
-      <Box sx={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 3, transform: 'translateY(12px)' }}>
         {/* 复习：任何 pending 句对都可立即进入，不受日期限制。 */}
         <Badge
           data-testid="review-badge"

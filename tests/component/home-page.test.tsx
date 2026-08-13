@@ -68,7 +68,16 @@ it('lets anonymous visitors see the home page without opening the login form', (
   renderAppRoutes('/');
 
   expect(screen.getByText('文言文背诵')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '登录' })).toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /用户名/ })).not.toBeInTheDocument();
+});
+
+it('opens the public login page from the home login button', () => {
+  renderAppRoutes('/');
+
+  fireEvent.click(screen.getByRole('button', { name: '登录' }));
+
+  expect(screen.getByRole('textbox', { name: /用户名/ })).toBeInTheDocument();
 });
 
 it('opens the login form only after an anonymous visitor enters a protected route', () => {
