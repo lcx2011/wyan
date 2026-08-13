@@ -35,11 +35,49 @@ find "$staging" -type d -exec chmod 0750 {} +
 find "$staging" -type f -exec chmod 0640 {} +
 mv "$staging" "$release_dir"
 
-ln -s "$release_dir" "$root/current.next-$release_name"
-mv -Tf "$root/current.next-$release_name" "$current"
+previous_release=$(readlink -f "$current")
+next_link="$root/current.next-$release_name"
+rollback_link="$root/current.rollback-$release_name"
+rm -f "$next_link" "$rollback_link"
+ln -s "$release_dir" "$next_link"
+mv -Tf "$next_link" "$current"
+
+rollback() {
+  echo "release health check failed; rolling back to $previous_release" >&2
+  rm -f "$rollback_link"
+  ln -s "$previous_release" "$rollback_link"
+  mv -Tf "$rollback_link" "$current"
+  systemctl daemon-reload
+  systemctl restart wenyan || true
+  for _ in $(seq 1 30); do
+    if curl --fail --silent --show-error --max-time 2 http://127.0.0.1:8878/api/health >/dev/null; then
+      echo "rollback completed: $previous_release" >&2
+      return 0
+    fi
+    sleep 1
+  done
+  echo "rollback health check failed" >&2
+  return 1
+}
 
 systemctl daemon-reload
-systemctl restart wenyan
-systemctl is-active --quiet wenyan
-curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8878/api/health >/dev/null
+if ! systemctl restart wenyan; then
+  rollback || true
+  exit 1
+fi
+
+healthy=0
+for _ in $(seq 1 30); do
+  if curl --fail --silent --show-error --max-time 2 http://127.0.0.1:8878/api/health >/dev/null; then
+    healthy=1
+    break
+  fi
+  sleep 1
+done
+
+if [ "$healthy" -ne 1 ]; then
+  rollback || true
+  exit 1
+fi
+
 echo "released $release_name"
