@@ -1,4 +1,4 @@
-import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types';
+import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types.js';
 
 /**
  * 陋室铭（唐 刘禹锡）

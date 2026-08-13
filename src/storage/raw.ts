@@ -1,4 +1,25 @@
+import { userStorageKey } from '../auth/session';
+
 const PREFIX = 'wenyan:';
+const memoryStorage = new Map<string, string>();
+
+function useTestStorage(): boolean {
+  return import.meta.env.MODE === 'test';
+}
+
+export function transientStorageGet(key: string): string | null {
+  return useTestStorage() ? window.localStorage.getItem(key) : memoryStorage.get(key) ?? null;
+}
+
+export function transientStorageSet(key: string, value: string): void {
+  if (useTestStorage()) window.localStorage.setItem(key, value);
+  else memoryStorage.set(key, value);
+}
+
+export function transientStorageRemove(key: string): void {
+  if (useTestStorage()) window.localStorage.removeItem(key);
+  else memoryStorage.delete(key);
+}
 
 export interface DecodedStorageValue {
   data: unknown;
@@ -7,7 +28,8 @@ export interface DecodedStorageValue {
 }
 
 export function withStoragePrefix(key: string): string {
-  return key.startsWith(PREFIX) ? key : `${PREFIX}${key}`;
+  if (key.startsWith('wenyan:user:')) return key;
+  return userStorageKey(key.startsWith(PREFIX) ? key.slice(PREFIX.length) : key);
 }
 
 export function decodeHistoricalValue(raw: string): unknown {

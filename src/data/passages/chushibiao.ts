@@ -1,4 +1,4 @@
-import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types';
+import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types.js';
 
 /**
  * 出师表（三国·蜀汉 诸葛亮）

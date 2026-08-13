@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: '文言文背诵',
         short_name: '文言文',
-        description: '面向中小学生的文言文渐进式背诵闯关应用，支持离线使用',
+        description: '面向中小学生的文言文渐进式背诵闯关应用，学习数据仅保存在云端',
         lang: 'zh-CN',
         theme_color: '#FF7043',
         background_color: '#FFF8F0',
@@ -35,7 +35,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // 全量离线缓存：js/css/html/svg/png/woff2/json（含篇目数据与拼音索引）
+        // 只缓存静态应用资源；启动和数据读取仍必须连接云端 API。
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,json}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
@@ -51,13 +51,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8787',
+        target: 'http://127.0.0.1:8878',
         changeOrigin: true,
       },
       '/gushiwen': {
-        target: 'https://www.gushiwenku.cn',
+        target: 'http://127.0.0.1:8878',
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/gushiwen/, ''),
       },
     },
   },

@@ -1,6 +1,17 @@
 import type { ReviewItem } from '../src/types.js';
 import type { ReviewSession } from '../src/domain/review/session.js';
 
+export interface AuthUser {
+  id: number;
+  username: string;
+}
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    authUser: AuthUser | null;
+  }
+}
+
 export const ARCHIVE_NAMESPACES = [
   'learning',
   'progress',

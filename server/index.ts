@@ -1,9 +1,8 @@
 import { buildApp } from './app.js';
 import { loggerOptions } from './logger.js';
 
-const port = Number(process.env.PORT ?? 8787);
-// Bind to localhost in development, but allow the LAN deployment to opt in
-// to a reachable interface with HOST=0.0.0.0.
+const port = Number(process.env.PORT ?? 8878);
+// Bind to localhost by default; a deployment must explicitly opt in to a wider interface.
 const host = process.env.HOST ?? '127.0.0.1';
 const app = buildApp({ logger: loggerOptions() });
 

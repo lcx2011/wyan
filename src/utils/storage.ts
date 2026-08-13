@@ -1,7 +1,14 @@
 import type { PersistStorage, StorageValue } from 'zustand/middleware';
 import type { PersistedRoot, RootSchema, StorageWriteResult } from '../storage/schema';
 import { bootstrapStorageMigrations } from '../storage/migrations';
-import { decodeHistoricalValue, decodeStorageValue, withStoragePrefix } from '../storage/raw';
+import {
+  decodeHistoricalValue,
+  decodeStorageValue,
+  transientStorageGet,
+  transientStorageRemove,
+  transientStorageSet,
+  withStoragePrefix,
+} from '../storage/raw';
 import { queueArchiveWrite } from '../api/syncQueue';
 
 const lastWriteResults = new Map<string, StorageWriteResult>();
@@ -23,13 +30,13 @@ export function readRoot<T>(
   const details = schemaDetails(schema);
   let decoded: ReturnType<typeof decodeStorageValue>;
   try {
-    const raw = window.localStorage.getItem(fullKey);
+    const raw = transientStorageGet(fullKey);
     if (raw === null) return { schemaVersion: details.version, data: fallback };
     decoded = decodeStorageValue(raw);
   } catch (error) {
     console.warn(`[storage] 数据损坏，已重置 ${fullKey}`, error);
     try {
-      window.localStorage.removeItem(fullKey);
+      transientStorageRemove(fullKey);
     } catch {
       // Access itself may be unavailable; returning fallback still keeps the app alive.
     }
@@ -53,7 +60,7 @@ export function readRoot<T>(
   } catch (error) {
     console.warn(`[storage] 迁移失败，已重置 ${fullKey}`, error);
     try {
-      window.localStorage.removeItem(fullKey);
+      transientStorageRemove(fullKey);
     } catch {
       // Keep fallback in memory if storage is unavailable.
     }
@@ -85,8 +92,10 @@ export function writeRoot<T>(key: string, root: PersistedRoot<T>): StorageWriteR
     return result;
   }
   try {
-    window.localStorage.setItem(fullKey, serialized);
-    const namespace = fullKey.replace(/^wenyan:/, '');
+    transientStorageSet(fullKey, serialized);
+    const namespace = fullKey.startsWith('wenyan:user:')
+      ? fullKey.slice(fullKey.lastIndexOf(':') + 1)
+      : fullKey.replace(/^wenyan:/, '');
     if (namespace !== 'serverOutbox') queueArchiveWrite(namespace, root);
     const result: StorageWriteResult = { ok: true };
     lastWriteResults.set(fullKey, result);
@@ -130,11 +139,11 @@ export function createPersistedRootStorage<T>(
 export function storageGet<T>(key: string, fallback: T): T {
   const fullKey = withPrefix(key);
   try {
-    const raw = window.localStorage.getItem(fullKey);
+    const raw = transientStorageGet(fullKey);
     return raw === null ? fallback : decodeHistoricalValue(raw) as T;
   } catch (error) {
     console.warn(`[storage] 解析失败，已重置 ${fullKey}`, error);
-    window.localStorage.removeItem(fullKey);
+    transientStorageRemove(fullKey);
     return fallback;
   }
 }
@@ -142,7 +151,7 @@ export function storageGet<T>(key: string, fallback: T): T {
 export function storageSet<T>(key: string, value: T): StorageWriteResult {
   const fullKey = withPrefix(key);
   try {
-    window.localStorage.setItem(fullKey, JSON.stringify(value));
+    transientStorageSet(fullKey, JSON.stringify(value));
     return { ok: true };
   } catch (error) {
     const quota = isQuotaError(error);
@@ -155,14 +164,14 @@ export function storageSet<T>(key: string, value: T): StorageWriteResult {
 }
 
 export function storageRemove(key: string): void {
-  window.localStorage.removeItem(withPrefix(key));
+  transientStorageRemove(withPrefix(key));
 }
 
 /** Legacy StateStorage compatibility for code outside the formal stores. */
 export const wenyanStorage = {
-  getItem: (name: string): string | null => window.localStorage.getItem(withPrefix(name)),
+  getItem: (name: string): string | null => transientStorageGet(withPrefix(name)),
   setItem: (name: string, value: string): void => {
-    window.localStorage.setItem(withPrefix(name), value);
+    transientStorageSet(withPrefix(name), value);
   },
   removeItem: storageRemove,
 };

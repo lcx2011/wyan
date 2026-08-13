@@ -2,6 +2,8 @@ import { Badge, Box, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { BookIcon, ReviewIcon } from '../components/icons';
 import { useReviewStore } from '../stores/reviewStore';
+import { logout } from '../api/auth';
+import { getActiveUser } from '../auth/session';
 
 /**
  * 主页入口（PRD §4.1 修改版）：
@@ -11,6 +13,12 @@ export function HomePage() {
   const navigate = useNavigate();
   const hasReview = useReviewStore((s) => s.hasReview());
   const showRedDot = hasReview;
+  const user = getActiveUser();
+
+  async function signOut(): Promise<void> {
+    await logout();
+    window.location.reload();
+  }
 
   return (
     <Box
@@ -24,12 +32,16 @@ export function HomePage() {
         px: 3,
       }}
     >
+      <Box sx={{ position: 'absolute', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="body2" color="text.secondary">{user?.username}</Typography>
+        <Button size="small" color="inherit" onClick={() => { void signOut(); }}>退出</Button>
+      </Box>
       <Box sx={{ textAlign: 'center', mb: 7 }}>
         <Typography variant="h3" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 2 }}>
           文言文背诵
         </Typography>
         <Typography color="text.secondary" sx={{ mt: 1, fontSize: 16 }}>
-          闯关式背诵 · 离线也能学
+          闯关式背诵 · 数据安全保存在云端
         </Typography>
       </Box>
 
@@ -90,7 +102,7 @@ export function HomePage() {
       </Box>
 
       <Typography variant="caption" color="text.secondary" sx={{ mt: 8 }}>
-        单人存档 · 无需登录
+        当前账号：{user?.username} · 学习数据保存在云端
       </Typography>
     </Box>
   );

@@ -1,4 +1,4 @@
-import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types';
+import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types.js';
 
 /**
  * 岳阳楼记（北宋 范仲淹）

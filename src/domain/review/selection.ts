@@ -1,6 +1,6 @@
-import type { ReviewItem } from '../../types';
-import { countHan } from '../../utils/text';
-import { todayISO } from '../../utils/time';
+import type { ReviewItem } from '../../types.js';
+import { countHan } from '../../utils/text.js';
+import { todayISO } from '../../utils/time.js';
 
 export const REVIEW_GROUP_MAX_ITEMS = 10;
 export const REVIEW_GROUP_MAX_HAN = 150;

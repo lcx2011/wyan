@@ -1,11 +1,13 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import Database from 'better-sqlite3';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Writable } from 'node:stream';
 import { buildApp } from '../../server/app';
+import { ArchiveDatabase } from '../../server/db';
 import type { ReviewItem } from '../../src/types';
 
 const apps: FastifyInstance[] = [];
@@ -46,6 +48,20 @@ async function loggingApp(): Promise<{ instance: FastifyInstance; lines: Array<R
   apps.push(instance);
   await instance.ready();
   return { instance, lines };
+}
+
+async function authApp(): Promise<FastifyInstance> {
+  const instance = buildApp({ dbPath: ':memory:', staticDir: 'Z:/not-a-real-dist', authEnabled: true });
+  apps.push(instance);
+  await instance.ready();
+  return instance;
+}
+
+function sessionCookie(response: { headers: { 'set-cookie'?: unknown } }): string {
+  const value = response.headers['set-cookie'];
+  const cookie = Array.isArray(value) ? value[0] : value;
+  expect(cookie).toBeDefined();
+  return String(cookie).split(';', 1)[0];
 }
 
 function reviewItem(id: string, order: number): ReviewItem {
@@ -318,6 +334,101 @@ describe('single archive API', () => {
     ]));
     expect((await instance.inject({ method: 'GET', url: '/api/content/passages' })).json<{ passages: Array<{ id: string }> }>().passages)
       .toEqual(expect.arrayContaining([expect.objectContaining({ id: 'online:defensive' })]));
+  });
+});
+
+describe('authentication and user isolation', () => {
+  it('registers, logs in, protects archives, and isolates users', async () => {
+    const instance = await authApp();
+    expect((await instance.inject({ method: 'GET', url: '/api/archive' })).statusCode).toBe(401);
+
+    const registered = await instance.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username: 'alice', password: 'alice-password' },
+    });
+    expect(registered.statusCode).toBe(201);
+    const aliceCookie = sessionCookie(registered);
+
+    const put = await instance.inject({
+      method: 'PUT',
+      url: '/api/archive/progress',
+      headers: { cookie: aliceCookie },
+      payload: { schemaVersion: 4, data: { progress: { alice: { contentVersion: 'v1' } } } },
+    });
+    expect(put.statusCode).toBe(200);
+
+    const duplicate = await instance.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username: 'alice', password: 'another-password' },
+    });
+    expect(duplicate.statusCode).toBe(409);
+
+    const login = await instance.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'alice', password: 'alice-password' },
+    });
+    expect(login.statusCode).toBe(200);
+    expect(login.json()).toMatchObject({ user: { username: 'alice' } });
+
+    const bob = await instance.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username: 'bob', password: 'bob-password' },
+    });
+    const bobArchive = await instance.inject({ method: 'GET', url: '/api/archive', headers: { cookie: sessionCookie(bob) } });
+    expect(bobArchive.json()).toMatchObject({ initialized: false, namespaces: {} });
+
+    const aliceArchive = await instance.inject({ method: 'GET', url: '/api/archive', headers: { cookie: aliceCookie } });
+    expect(aliceArchive.json()).toMatchObject({ initialized: true, namespaces: { progress: { data: { progress: { alice: { contentVersion: 'v1' } } } } } });
+  });
+
+  it('only proxies the fixed gushiwen routes and never follows a caller-supplied origin', async () => {
+    const instance = await authApp();
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('[]', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    const registered = await instance.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username: 'proxy-user', password: 'proxy-password' },
+    });
+    const cookie = sessionCookie(registered);
+    expect((await instance.inject({ method: 'GET', url: '/gushiwen/http://127.0.0.1:1/', headers: { cookie } })).statusCode).toBe(404);
+    expect((await instance.inject({ method: 'POST', url: '/gushiwen/ajax/search?target=http://127.0.0.1:1', headers: { cookie }, payload: { key: 'x' } })).statusCode).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(new URL('https://www.gushiwenku.cn/ajax/search'), expect.objectContaining({ method: 'POST' }));
+  });
+});
+
+describe('legacy archive migration', () => {
+  it('moves the old single archive into admin', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'wenyan-legacy-'));
+    temporaryDirs.push(directory);
+    const filename = join(directory, 'legacy.sqlite');
+    const legacy = new Database(filename);
+    legacy.exec(`
+      CREATE TABLE app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE archive_namespaces (namespace TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, data_json TEXT NOT NULL, updated_at TEXT NOT NULL);
+      CREATE TABLE content_passages (id TEXT PRIMARY KEY, source_type TEXT NOT NULL DEFAULT 'builtin', content_version TEXT NOT NULL, passage_json TEXT NOT NULL, updated_at TEXT NOT NULL);
+      CREATE TABLE learning_entries (passage_id TEXT PRIMARY KEY, added_at TEXT NOT NULL);
+      INSERT INTO app_meta VALUES ('archive_initialized', '1');
+      INSERT INTO app_meta VALUES ('archive_revision', '12');
+      INSERT INTO archive_namespaces VALUES ('progress', 4, '{"progress":{"legacy":{"contentVersion":"v1"}}}', '2026-08-12T00:00:00.000Z');
+    `);
+    legacy.close();
+
+    const previousPassword = process.env.WENYAN_ADMIN_PASSWORD;
+    process.env.WENYAN_ADMIN_PASSWORD = 'migration-password';
+    const migrated = new ArchiveDatabase(filename);
+    const admin = migrated.findUserForLogin('admin');
+    expect(admin?.user.username).toBe('admin');
+    expect(migrated.getArchive(admin?.user.id ?? -1)).toMatchObject({ initialized: true, revision: 12, namespaces: { progress: { data: { progress: { legacy: { contentVersion: 'v1' } } } } } });
+    migrated.close();
+    if (previousPassword === undefined) delete process.env.WENYAN_ADMIN_PASSWORD;
+    else process.env.WENYAN_ADMIN_PASSWORD = previousPassword;
   });
 });
 

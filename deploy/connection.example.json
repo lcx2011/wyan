@@ -1,8 +1,0 @@
-{
-  "hostAlias": "wenyan-home",
-  "hostName": "192.168.40.39",
-  "port": 22,
-  "user": "REPLACE_WITH_SERVER_USER",
-  "remoteDir": "/opt/wenyan",
-  "databasePath": "/var/lib/wenyan/wenyan.sqlite"
-}

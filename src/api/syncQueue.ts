@@ -1,40 +1,28 @@
-import { withStoragePrefix } from '../storage/raw';
+import { markCloudAvailable, markCloudUnavailable } from './cloudStatus';
 
 export interface ArchiveRootPayload {
   schemaVersion: number;
   data: unknown;
 }
 
-const OUTBOX_KEY = withStoragePrefix('serverOutbox');
 const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 let flushTimer: number | null = null;
 let activeFlush: Promise<void> | null = null;
 let paused = false;
 let syncEnabled = import.meta.env.MODE !== 'test';
+// Deliberately memory-only. A failed request must not leave a durable browser outbox.
+let outbox: Record<string, ArchiveRootPayload> = {};
 
 function isEnabled(): boolean {
   return syncEnabled;
 }
 
 function readOutbox(): Record<string, ArchiveRootPayload> {
-  try {
-    const raw = window.localStorage.getItem(OUTBOX_KEY);
-    const value = raw ? JSON.parse(raw) as unknown : {};
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? value as Record<string, ArchiveRootPayload>
-      : {};
-  } catch {
-    return {};
-  }
+  return outbox;
 }
 
 function writeOutbox(value: Record<string, ArchiveRootPayload>): void {
-  try {
-    if (Object.keys(value).length === 0) window.localStorage.removeItem(OUTBOX_KEY);
-    else window.localStorage.setItem(OUTBOX_KEY, JSON.stringify(value));
-  } catch {
-    // The local store reports quota failures; sync retries on the next write/startup.
-  }
+  outbox = value;
 }
 
 export function pauseArchiveSync(value: boolean): void {
@@ -57,16 +45,27 @@ export function queueArchiveWrite(namespace: string, root: ArchiveRootPayload): 
   flushTimer = window.setTimeout(() => {
     flushTimer = null;
     void flushArchiveSync();
-  }, 250);
+  }, import.meta.env.MODE === 'test' ? 250 : 0);
 }
 
 async function sendRoot(namespace: string, root: ArchiveRootPayload): Promise<void> {
-  const response = await fetch(`${API_BASE}/archive/${encodeURIComponent(namespace)}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(root),
-  });
-  if (!response.ok) throw new Error(`archive sync failed: ${response.status} (reqId=${response.headers.get('x-request-id') ?? 'n/a'})`);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/archive/${encodeURIComponent(namespace)}`, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(root),
+    });
+  } catch (error) {
+    markCloudUnavailable('云端暂时不可用，本次操作未完成，请重新连接后重试。');
+    throw error;
+  }
+  if (!response.ok) {
+    markCloudUnavailable(`云端保存失败（HTTP ${response.status}），请重新连接后重试。`);
+    throw new Error(`archive sync failed: ${response.status} (reqId=${response.headers.get('x-request-id') ?? 'n/a'})`);
+  }
+  markCloudAvailable();
 }
 
 export async function flushArchiveSync(): Promise<void> {

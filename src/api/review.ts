@@ -1,4 +1,5 @@
 import type { ReviewAnswer, ReviewSession } from '../domain/review/session';
+import { markCloudAvailable, markCloudUnavailable } from './cloudStatus';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 let apiEnabled = import.meta.env.MODE !== 'test';
@@ -23,11 +24,22 @@ export function setReviewApiEnabled(value: boolean): void {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
-  });
-  if (!response.ok) throw new Error(`review request failed: ${response.status} (reqId=${response.headers.get('x-request-id') ?? 'n/a'})`);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    });
+  } catch (error) {
+    markCloudUnavailable('云端复习服务暂时不可用，本次操作未完成。');
+    throw error;
+  }
+  if (!response.ok) {
+    markCloudUnavailable(`云端复习操作失败（HTTP ${response.status}），请重新连接后重试。`);
+    throw new Error(`review request failed: ${response.status} (reqId=${response.headers.get('x-request-id') ?? 'n/a'})`);
+  }
+  markCloudAvailable();
   return response.json() as Promise<T>;
 }
 

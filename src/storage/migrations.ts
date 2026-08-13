@@ -1,6 +1,6 @@
 import { createFormalPassage, type ExamAttempt, type LearningEntry, type Passage, type PassageProgress, type ReviewItem } from '../types';
 import { SCHEMA_VERSIONS, type MigrationNotice, type PersistedRoot } from './schema';
-import { decodeStorageValue, withStoragePrefix } from './raw';
+import { decodeStorageValue, transientStorageGet, transientStorageSet, withStoragePrefix } from './raw';
 import { clampMastery } from '../domain/training/mastery';
 
 export interface LearningData {
@@ -297,7 +297,7 @@ export function migrateBadgeData(data: unknown): {
 let lastBootstrapFingerprint: string | null = null;
 
 function rawNamespace(key: string): string | null {
-  return window.localStorage.getItem(withStoragePrefix(key));
+  return transientStorageGet(withStoragePrefix(key));
 }
 
 function bootstrapFingerprint(): string {
@@ -310,7 +310,7 @@ function bootstrapFingerprint(): string {
 
 function writeCanonicalRoot<T>(key: string, root: PersistedRoot<T>): void {
   try {
-    window.localStorage.setItem(withStoragePrefix(key), JSON.stringify(root));
+    transientStorageSet(withStoragePrefix(key), JSON.stringify(root));
   } catch (error) {
     console.warn(`[storage] 协调迁移写入失败 ${withStoragePrefix(key)}`, error);
   }

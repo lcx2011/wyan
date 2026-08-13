@@ -1,4 +1,4 @@
-import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types';
+import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types.js';
 
 /**
  * 桃花源记（东晋 陶渊明）

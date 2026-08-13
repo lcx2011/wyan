@@ -1,4 +1,4 @@
-import type { ReviewItem } from '../../types';
+import type { ReviewItem } from '../../types.js';
 
 const RETRY_INSERT_DISTANCE = 2;
 const PASSES_AFTER_MISS = 2;

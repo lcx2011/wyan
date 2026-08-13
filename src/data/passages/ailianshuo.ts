@@ -1,4 +1,4 @@
-import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types';
+import { createFormalPassage, type LegacySegmentInput, type LegacySentenceInput, type Passage } from '../../types.js';
 
 /**
  * 爱莲说（北宋 周敦颐）

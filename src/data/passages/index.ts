@@ -1,12 +1,12 @@
-import type { Passage, PassageMeta } from '../../types';
-import { countPassageHan } from '../../utils/text';
-import { matchByInitials, normalizeKeyword, textInitials } from '../../utils/pinyin';
+import type { Passage, PassageMeta } from '../../types.js';
+import { countPassageHan } from '../../utils/text.js';
+import { matchByInitials, normalizeKeyword, textInitials } from '../../utils/pinyin.js';
 
-import { chushibiao } from './chushibiao';
-import { yueyanglouji } from './yueyanglouji';
-import { loushiming } from './loushiming';
-import { ailianshuo } from './ailianshuo';
-import { taohuayuanji } from './taohuayuanji';
+import { chushibiao } from './chushibiao.js';
+import { yueyanglouji } from './yueyanglouji.js';
+import { loushiming } from './loushiming.js';
+import { ailianshuo } from './ailianshuo.js';
+import { taohuayuanji } from './taohuayuanji.js';
 
 /** 篇目注册表：内置篇目数组，未来新增篇目只需在此追加。 */
 let registry: Passage[] = [chushibiao, yueyanglouji, loushiming, ailianshuo, taohuayuanji];
