@@ -1,19 +1,26 @@
 [Unit]
 Description=Wenyan personal study archive
 After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
 User=wenyan
-WorkingDirectory=/opt/wenyan
+WorkingDirectory=/opt/wenyan/current
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=8878
 EnvironmentFile=-/etc/wenyan/wenyan.env
 Environment=WENYAN_DB_PATH=/var/lib/wenyan/wenyan.sqlite
-ExecStart=/usr/bin/node /opt/wenyan/dist-server/server/index.js
+Environment=LOG_FILE=/opt/wenyan/data/logs/server.log
+ExecStartPre=/usr/bin/test -r /opt/wenyan/current/dist-server/server/index.js
+ExecStartPre=/usr/bin/test -d /opt/wenyan/current/dist
+ExecStart=/usr/bin/node /opt/wenyan/current/dist-server/server/index.js
 Restart=on-failure
-RestartSec=5
+RestartSec=2
+TimeoutStartSec=30
+TimeoutStopSec=15
 
 [Install]
 WantedBy=multi-user.target

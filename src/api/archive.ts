@@ -11,10 +11,13 @@ import { SCHEMA_VERSIONS, STORAGE_KEYS, type PersistedRoot } from '../storage/sc
 import { readRoot, withPrefix } from '../utils/storage';
 import { flushArchiveSync, getPendingArchiveWrites, pauseArchiveSync, type ArchiveRootPayload } from './syncQueue';
 import { markCloudAvailable, markCloudUnavailable } from './cloudStatus';
+import { fetchWithRetry } from './fetchWithRetry';
 import { passageRegistry } from '../data/passages';
 import type { Passage } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
+const STARTUP_READ_OPTIONS = { timeoutMs: 6_000, retries: 2, retryDelayMs: [300, 900] } as const;
+const STARTUP_WRITE_OPTIONS = { timeoutMs: 10_000, retries: 0 } as const;
 type ArchiveNamespace = keyof typeof SCHEMA_VERSIONS;
 
 function requestId(response: Response): string {
@@ -51,13 +54,13 @@ export async function parseResponseJson(response: Response, context: string): Pr
 
 async function requestSnapshot(path: string, init?: RequestInit): Promise<ArchiveSnapshot> {
   let response: Response;
+  const options = init?.method && init.method !== 'GET' ? STARTUP_WRITE_OPTIONS : STARTUP_READ_OPTIONS;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    response = await fetchWithRetry(`${API_BASE}${path}`, {
       ...init,
-      signal: AbortSignal.timeout(2_000),
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
-    });
+    }, options);
   } catch (error) {
     markCloudUnavailable('无法连接云端服务，请检查服务器或网络后重试。');
     throw error;
@@ -74,10 +77,9 @@ async function requestSnapshot(path: string, init?: RequestInit): Promise<Archiv
 async function hydrateServerContent(): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}/content/passages`, {
+    response = await fetchWithRetry(`${API_BASE}/content/passages`, {
       credentials: 'same-origin',
-      signal: AbortSignal.timeout(2_000),
-    });
+    }, STARTUP_READ_OPTIONS);
   } catch (error) {
     markCloudUnavailable('无法读取云端篇目，请检查服务器或网络后重试。');
     throw error;
