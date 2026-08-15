@@ -9,10 +9,12 @@ import { SnowballPage } from './pages/SnowballPage';
 import { ExamPage } from './pages/ExamPage';
 import { ReportPage } from './pages/ReportPage';
 import { AuthPage } from './pages/AuthPage';
+import { LandingPage } from './landing/LandingPage';
 import { getActiveUser } from './auth/session';
 
 /**
  * 路由表（HashRouter）：
+ * - 官网：/landing (或 /official)
  * - 主流程：/ 首页 → /learn 新学列表 → /search 搜索添加；/review 复习
  * - 背诵流程路由占位：卡片学习 / 三连闯关 / 滚雪球 / 全文验收
  */
@@ -20,6 +22,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/official" element={<Navigate to="/landing" replace />} />
       <Route path="/login" element={<LoginRoute />} />
       <Route element={<RequireAuth />}>
         <Route path="/learn" element={<NewLearnPage />} />

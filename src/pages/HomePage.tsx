@@ -33,6 +33,15 @@ export function HomePage() {
       }}
     >
       <Box sx={{ position: 'absolute', top: 12, right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Button
+          size="small"
+          variant="text"
+          color="primary"
+          onClick={() => navigate('/landing')}
+          sx={{ fontWeight: 600, fontSize: 13 }}
+        >
+          🏛️ 产品官网
+        </Button>
         {user ? (
           <>
             <Typography variant="body2" color="text.secondary">{user.username}</Typography>
